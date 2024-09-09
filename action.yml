@@ -1,0 +1,92 @@
+name: "Set GitHub App/Bot as Git Config User"
+description: "Retrieves the GitHub App/Bot user ID using REST API and sets the Git user.name and user.email configuration"
+
+inputs:
+  'app-slug':
+    description: "The GitHub App/Bot slug"
+    required: false
+    default: 'github-actions'
+  'local':
+    description: "Use local Git config instead of global"
+    required: false
+    default: 'false'
+  'github-token':
+    description: "The GitHub token used to create an authenticated client"
+    required: false
+    default: ${{ github.token }}
+outputs:
+  'app-slug':
+    description: "The GitHub App/Bot slug"
+    value: ${{ inputs['app-slug'] }}
+  'bot-user-id':
+    description: "The GitHub App/Bot user ID"
+    value: ${{ steps['main'].outputs['bot-user-id'] }}
+  'bot-user-login':
+    description: "The GitHub App/Bot user login"
+    value: ${{ steps['main'].outputs['bot-user-login'] }}
+  'git-user-name':
+    description: "The configured Git user.name"
+    value: ${{ steps['main'].outputs['git-user-name'] }}
+  'git-user-email':
+    description: "The configured Git user.email"
+    value: ${{ steps['main'].outputs['git-user-email'] }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: "Get GitHub App/Bot User ID and Set Git Config"
+      id: 'main'
+      uses: 'actions/github-script@v7'
+      env:
+        'INPUT_APP-SLUG': ${{ inputs['app-slug'] }}
+        'INPUT_LOCAL':    ${{ inputs['local'] }}
+      with:
+        'github-token':   ${{ inputs['github-token'] }}
+        'script': |
+          const startTime = performance.now()
+
+          const appSlug = core.getInput('app-slug', {required: true, trimWhitespace: true})
+          const isLocal = core.getBooleanInput('local')
+
+          if ( ! appSlug ) {
+            core.setFailed("Missing 'app-slug' input")
+            return
+          }
+
+          const botUsername = `${appSlug}[bot]`
+          core.info(`Fetching GitHub user details for '${botUsername}'`)
+
+          const { data: botUser } = await github.rest.users.getByUsername({
+            username: botUsername
+          })
+
+          if ( ! botUser ) {
+            core.setFailed(`Unable to find GitHub user with username '${botUsername}'`)
+            return
+          }
+
+          core.info(`Bot user ID:    \`${botUser.id}\``)
+          core.setOutput('bot-user-id', botUser.id)
+          core.info(`Bot user login: \`${botUser.login}\``)
+          core.setOutput('bot-user-login', botUser.login)
+
+          const gitUserName = botUser.login
+          const gitUserEmail = `${botUser.id}+${botUser.login}@users.noreply.github.com`
+
+          core.info(`Git user.name:  \`${gitUserName}\``)
+          core.setOutput('git-user-name', gitUserName)
+          core.info(`Git user.email: \`${gitUserEmail}\``)
+          core.setOutput('git-user-email', gitUserEmail)
+
+          core.info('Setting up Git user configuration...')
+
+          const gitConfigScope = isLocal ? '--local' : '--global'
+          const gitConfigArgs = ['config', gitConfigScope, '--']
+
+          await Promise.all([
+            exec.exec('git', [...gitConfigArgs, 'user.name', gitUserName]),
+            exec.exec('git', [...gitConfigArgs, 'user.email', gitUserEmail]),
+          ])
+
+          const runtime = (performance.now() - startTime).toFixed(2)
+          core.info(`✅ Successfully configured Git user.name and user.email in ${runtime} ms`)
