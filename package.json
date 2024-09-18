@@ -1,0 +1,14 @@
+{
+  "name": "@actions-rindeal/git-identity-from-username",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "build": "npx tsc"
+  },
+  "devDependencies": {
+    "@octokit/request-error": "^6.1.4",
+    "@tsconfig/node20": "^20.1.4",
+    "github-script": "github:actions/github-script",
+    "typescript": "^5.6.2"
+  }
+}

@@ -10,60 +10,131 @@ on:
 
 jobs:
   'test':
+    name: >
+      ${{ 
+        (startsWith(matrix['os'], 'ubuntu')  && 'Ubuntu' ) || 
+        (startsWith(matrix['os'], 'macos')   && 'MacOS'  ) || 
+        (startsWith(matrix['os'], 'windows') && 'Windows') || 
+        'OS_UNKNOWN_PLEASE_FIX'
+      }} - ${{ fromJSON(matrix['json'])['name'] }}
     runs-on: ${{ matrix['os'] }}
     strategy:
       matrix:
-        'os': ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        'os':
+          - 'ubuntu-latest'
+          - 'windows-latest'
+          - 'macos-latest'
         'json':
           - |
             {
-              "appSlug": "github-actions",
-              "local": false,
+              "name": "Valid user, global config",
               "expectFail": false,
+              "inputs": {
+                "username": "github-actions[bot]",
+                "local": false
+              },
               "expectedOutputs": {
-                "app-slug": "github-actions",
-                "bot-user-id": "41898282",
-                "bot-user-login": "github-actions[bot]",
                 "git-user-name": "github-actions[bot]",
                 "git-user-email": "41898282+github-actions[bot]@users.noreply.github.com"
               }
             }
           - |
             {
-              "appSlug": "github-actions",
-              "local": true,
+              "name": "Valid user, local config",
               "expectFail": false,
+              "inputs": {
+                "username": "github-actions[bot]",
+                "local": true
+              },
               "expectedOutputs": {
-                "app-slug": "github-actions",
-                "bot-user-id": "41898282",
-                "bot-user-login": "github-actions[bot]",
                 "git-user-name": "github-actions[bot]",
                 "git-user-email": "41898282+github-actions[bot]@users.noreply.github.com"
               }
             }
           - |
             {
-              "appSlug": "foo-bar",
-              "local": false,
-              "expectFail": true
+              "name": "Non-existent user",
+              "expectFail": true,
+              "inputs": {
+                "username": "hopefully-non-existent-user",
+                "local": false
+              }
             }
           - |
             {
-              "appSlug": "",
-              "local": false,
-              "expectFail": true
+              "name": "Empty username",
+              "expectFail": true,
+              "inputs": {
+                "username": "",
+                "local": false
+              }
             }
           - |
             {
-              "appSlug": "invalid-slug-with-special-characters-!@#",
-              "local": false,
-              "expectFail": true
+              "name": "Invalid username",
+              "expectFail": true,
+              "inputs": {
+                "username": "invalid-username-!@#",
+                "local": false
+              }
             }
           - |
             {
-              "appSlug": "github-actions",
-              "local": "invalid-boolean",
-              "expectFail": true
+              "name": "Invalid local value",
+              "expectFail": true,
+              "inputs": {
+                "username": "octocat",
+                "local": "invalid-boolean"
+              }
+            }
+          - |
+            {
+              "name": "Use public email",
+              "expectFail": false,
+              "inputs": {
+                "username": "google",
+                "use-public-email": true
+              },
+              "expectedOutputs": {
+                "git-user-name": "Google",
+                "git-user-email": "opensource@google.com"
+              }
+            }
+          - |
+            {
+              "name": "Custom git name template",
+              "expectFail": false,
+              "inputs": {
+                "username": "octocat",
+                "git-name-tmpl": "{{login}} ({{name}})"
+              },
+              "expectedOutputs": {
+                "git-user-name": "octocat (The Octocat)",
+                "git-user-email": "583231+octocat@users.noreply.github.com"
+              }
+            }
+          - |
+            {
+              "name": "Failover name and email",
+              "expectFail": false,
+              "inputs": {
+                "username": "hopefully-non-existent-user",
+                "failover-name": "Fallback User",
+                "failover-email": "fallback@example.com"
+              },
+              "expectedOutputs": {
+                "git-user-name": "Fallback User",
+                "git-user-email": "fallback@example.com"
+              }
+            }
+          - |
+            {
+              "name": "Failover name without email",
+              "expectFail": true,
+              "inputs": {
+                "username": "hopefully-non-existent-user",
+                "failover-name": "Fallback User"
+              }
             }
 
     steps:
@@ -73,52 +144,56 @@ jobs:
       - name: "Run Action with Inputs"
         id: 'test'
         continue-on-error: ${{ fromJSON(matrix['json'])['expectFail'] }}
-        uses: ./
+        uses: './'
         with:
-          app-slug: ${{ fromJSON(matrix['json'])['appSlug'] }}
-          local: ${{ fromJSON(matrix['json'])['local'] }}
+          'username':         ${{ fromJSON(matrix['json'])['inputs']['username']                    }}
+          'local':            ${{ fromJSON(matrix['json'])['inputs']['local']            || 'false' }}
+          'use-public-email': ${{ fromJSON(matrix['json'])['inputs']['use-public-email'] || 'false' }}
+          'git-name-tmpl':    ${{ fromJSON(matrix['json'])['inputs']['git-name-tmpl']               }}
+          'failover-name':    ${{ fromJSON(matrix['json'])['inputs']['failover-name']               }}
+          'failover-email':   ${{ fromJSON(matrix['json'])['inputs']['failover-email']              }}
 
       - name: "Check Outputs"
         if: ${{ steps['test'].outcome == 'success' }}
         env:
-          'OUTPUTS_JSON': ${{ toJSON(steps['test'].outputs) }}
+          'OUTPUTS_JSON':          ${{ toJSON(steps['test'].outputs) }}
+          'INPUTS_JSON':           ${{ toJSON(fromJSON(matrix['json'])['inputs']) }}
           'EXPECTED_OUTPUTS_JSON': ${{ toJSON(fromJSON(matrix['json'])['expectedOutputs']) }}
         uses: 'actions/github-script@main'
         with:
           script: |
-            const outputsJson = process.env['OUTPUTS_JSON']
-            if ( ! outputsJson ) {
-              throw new Error('OUTPUTS_JSON environment variable is empty')
+            const getJsonEnvVar = (varName) => {
+              const json = process.env[varName]
+              if ( ! json ) {
+                throw new Error(`${varName} environment variable is empty`)
+              }
+            
+              let parsedJson
+              try {
+                parsedJson = JSON.parse(json)
+              } catch (e) {
+                throw new Error(`${varName} is not a valid JSON`)
+              }
+            
+              if (
+                ! parsedJson ||
+                typeof parsedJson !== 'object' ||
+                Array.isArray(parsedJson) ||
+                Object.keys(parsedJson).length === 0
+              ) {
+                throw new Error(`${varName} is empty or not an object`)
+              }
+            
+              return [ parsedJson , json ]
             }
-
-            const expectedOutputsJson = process.env['EXPECTED_OUTPUTS_JSON']
-            if ( ! expectedOutputsJson ) {
-              throw new Error('EXPECTED_OUTPUTS_JSON environment variable is empty')
-            }
-
-            let expectedOutputs
-            try {
-              expectedOutputs = JSON.parse(expectedOutputsJson)
-            } catch (e) {
-              throw new Error('EXPECTED_OUTPUTS_JSON is not a valid JSON')
-            }
-
-            if ( ! expectedOutputs || typeof expectedOutputs !== 'object' || Array.isArray(expectedOutputs) || Object.keys(expectedOutputs).length === 0 ) {
-              throw new Error('EXPECTED_OUTPUTS_JSON is empty or not an object')
-            }
-
-            let outputs
-            try {
-              outputs = JSON.parse(outputsJson)
-            } catch (e) {
-              throw new Error('OUTPUTS_JSON is not a valid JSON')
-            }
-
-            if ( ! outputs || typeof outputs !== 'object' || Array.isArray(outputs) || Object.keys(outputs).length === 0 ) {
-              throw new Error('OUTPUTS_JSON is empty or not an object')
-            }
+            
+            const [ inputs ] = getJsonEnvVar('INPUTS_JSON')
+            const [ outputs, outputsJson ] = getJsonEnvVar('OUTPUTS_JSON')
+            const [ expectedOutputs ] = getJsonEnvVar('EXPECTED_OUTPUTS_JSON')
 
             await exec.exec('jq', ['-C', '.'], { input: outputsJson })
+            console.log(`User JSON:`)
+            await exec.exec('jq', ['-C', '.'], { input: outputs['user-json'] })
 
             for ( const key in expectedOutputs ) {
               if ( expectedOutputs[key] !== outputs[key] ) {
@@ -126,8 +201,20 @@ jobs:
               }
             }
 
-      - name: "Check Failure Reason"
-        if: ${{ steps['test'].outcome == 'failure' }}
-        run: |
-          echo "Test failed as expected. Checking failure reason..."
-          echo "Failure reason: ${{ steps['test'].outputs['failure-reason'] }}"
+            const scope = inputs['local'] ? '--local' : '--global'
+            const [userName, userEmail] = await Promise.all([
+              exec.getExecOutput('git', ['config', scope, 'user.name' ]).then(output => output.stdout.trim()),
+              exec.getExecOutput('git', ['config', scope, 'user.email']).then(output => output.stdout.trim()),
+            ])
+            if ( userName !== expectedOutputs['git-user-name'] ) {
+              throw new Error(`Mismatch for user.name: expected "${expectedOutputs['git-user-name']}", got "${userName}"`)
+            }
+            if ( userEmail !== expectedOutputs['git-user-email'] ) {
+              throw new Error(`Mismatch for user.email: expected "${expectedOutputs['git-user-email']}", got "${userEmail}"`)
+            }
+
+      # - name: "Check Failure Reason"
+      #   if: ${{ steps['test'].outcome == 'failure' }}
+      #   run: |
+      #     echo "Test failed as expected. Checking failure reason..."
+      #     echo "Failure reason: ${{ steps['test'].outputs['failure-reason'] }}"

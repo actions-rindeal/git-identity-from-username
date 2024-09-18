@@ -1,0 +1,28 @@
+{
+    "extends": "@tsconfig/node20/tsconfig.json",
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "Node",
+      "esModuleInterop": false,
+      "alwaysStrict": true,
+      "declaration": false,
+      "forceConsistentCasingInFileNames": true,
+      "isolatedModules": false,
+      "noFallthroughCasesInSwitch": true,
+      "noImplicitReturns": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "outDir": "./",
+      "pretty": true,
+      "resolveJsonModule": true,
+      "sourceMap": true
+    },
+    "include": [
+      "action.ts"
+    ],
+    "exclude": [
+      "node_modules",
+      "**/__tests__",
+      "**/*.test.ts"
+    ]
+  }
