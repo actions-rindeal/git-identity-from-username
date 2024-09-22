@@ -10,6 +10,7 @@ inputs:
   'username':
     description: "The GitHub username to fetch details for"
     required: true
+    default: 'github-actions[bot]'
   'local':
     description: "Use local Git config instead of global"
     required: false
@@ -29,7 +30,7 @@ inputs:
     required: false
   'github-token':
     description: "The GitHub token used to authenticate API requests"
-    required: false
+    required: true
     default: ${{ github.token }}
 
 outputs:
