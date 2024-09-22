@@ -1,15 +1,5 @@
 "use strict";
-/*
- * SPDX-FileCopyrightText:  ANNO DOMINI 2024  Jan Chren ~rindeal  <dev.rindeal gmail com>
- * SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
- */
-const main = async ({ 
-// context,
-core, github, exec,
-// glob,
-// io,
-// require,
- }) => {
+const main = async ({ core, github, exec, }) => {
     const startTime = performance.now();
     const username = core.getInput('username', { required: true, trimWhitespace: true });
     const isLocal = core.getBooleanInput('local') ?? false;
@@ -32,7 +22,6 @@ core, github, exec,
         user = data;
     }
     catch (error) {
-        // const { RequestError } = await import("@octokit/request-error")
         const e = error;
         core.error(`❌ Error fetching user data: ${e.status}: ${e.message}`);
         console.error({ e });
@@ -42,7 +31,6 @@ core, github, exec,
         }
         user = { login: username };
     }
-    // Delete useless API URLs
     for (const _key in user) {
         const key = _key;
         if (key.endsWith('url') && user[key].startsWith('https://api.github.com/')) {
@@ -73,10 +61,6 @@ core, github, exec,
     core.info('⚙️ Setting up Git user configuration...');
     const gitConfigScope = isLocal ? '--local' : '--global';
     const gitConfigArgs = ['config', gitConfigScope, '--'];
-    // do not use Promise.all(), since `git config` fails if it finds a locked config file like this:
-    //
-    //     error: could not lock config file .git/config: File exists
-    //
     await exec.exec('git', [...gitConfigArgs, 'user.name', gitUserName]);
     await exec.exec('git', [...gitConfigArgs, 'user.email', gitUserEmail]);
     const runtime = (performance.now() - startTime).toFixed(2);

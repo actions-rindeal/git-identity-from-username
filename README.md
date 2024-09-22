@@ -1,15 +1,16 @@
-# Configure Git Identity from GitHub Username 🚀
+# 🔧🤖🆔 Configure Git Identity from GitHub Username
+
+Stop hardcoding unclear `git config user.email 12345+foo[bot]@users.noreply.github.com ...` commands!<br>
+Let this well-tested, robust and performance-optimized GitHub Action handle it for you.
 
 [![Test](https://github.com/actions-rindeal/git-config-user-bot/actions/workflows/test.yml/badge.svg)](https://github.com/actions-rindeal/git-config-user-bot/actions/workflows/test.yml)
-
-Stop copy-pasting `git config user.email 12345+foo[bot]@users.noreply.github.com ...`!<br>
-Let this well-tested, robust and performance-optimized GitHub Action handle it for you.
 
 ## 📚 Details
 
 Using a GitHub username and REST API, it fetches GitHub user details,
 then generates and sets proper Git name and email, so that all commits made in your workflow are attributed to this user.
-The user may also be an app/bot, eg. `username: github-actions[bot]` will cause the commits to be attributed to the `github-actions` app.
+
+The user may also be an app/bot, eg. `username: github-actions[bot]` will attribute all commits to the `github-actions` app.
 
 ## 💡 Features
 
@@ -29,7 +30,7 @@ jobs:
       - name: "⬇️ Checkout"
         uses: 'actions/checkout@main'
 
-      - name: "🔧🆔 Set Git Identity"
+      - name: "🔧🤖🆔 Set Git Identity"
         uses: 'actions-rindeal/git-identity-from-username@v2'
         with:
           # 'username': 'octocat' # `github-actions[bot]` by default

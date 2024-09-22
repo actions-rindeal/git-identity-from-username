@@ -5,7 +5,17 @@
 
 version: 2
 updates:
-  - package-ecosystem: "actions" # See documentation for possible values
+  - package-ecosystem: "github-actions"
     directory: "/" # Location of package manifests
     schedule:
       interval: "monthly"
+
+  - package-ecosystem: "npm"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "monthly"
+    ignore:
+      - dependency-type: "development"
+    commit-message:
+      prefix: "build"
+      include: "scope"

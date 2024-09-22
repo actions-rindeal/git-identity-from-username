@@ -1,28 +1,29 @@
 {
-    "extends": "@tsconfig/node20/tsconfig.json",
-    "compilerOptions": {
-      "module": "CommonJS",
-      "moduleResolution": "Node",
-      "esModuleInterop": false,
-      "alwaysStrict": true,
-      "declaration": false,
-      "forceConsistentCasingInFileNames": true,
-      "isolatedModules": false,
-      "noFallthroughCasesInSwitch": true,
-      "noImplicitReturns": true,
-      "noUnusedLocals": true,
-      "noUnusedParameters": true,
-      "outDir": "./",
-      "pretty": true,
-      "resolveJsonModule": true,
-      "sourceMap": true
-    },
-    "include": [
-      "action.ts"
-    ],
-    "exclude": [
-      "node_modules",
-      "**/__tests__",
-      "**/*.test.ts"
-    ]
-  }
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "./",
+    "alwaysStrict": true,
+    "declaration": false,
+    "esModuleInterop": false,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "pretty": true,
+    "removeComments": true,
+    "resolveJsonModule": true,
+    "sourceMap": true
+  },
+  "include": [
+    "action.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/__tests__",
+    "**/*.test.ts"
+  ]
+}
