@@ -14,8 +14,11 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "monthly"
+    allow:
+      - dependency-type: "production"
     ignore:
-      - dependency-type: "development"
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-patch" ]
     commit-message:
       prefix: "build"
       include: "scope"
