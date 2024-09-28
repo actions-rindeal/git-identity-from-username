@@ -72,11 +72,3 @@ To prevent future issues, I added `failover-name` and `failover-email` inputs to
           'username': 'github-actions[bot]'
           'failover-email': '41898282+github-actions[bot]@users.noreply.github.com'
 ```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-
-## 📄 License
-
-This project is licensed under the `GPL-3.0-only` License. See the [LICENSE](LICENSE) file for details.
